@@ -2,14 +2,13 @@
 //  CharacterStatus.swift
 //  RickAndMortyApp
 //
-//  Created by Adrian Flores Herrera on 4/27/26.
+//  Created by Adrian Flores Herrera on 5/4/26.
 //
 
 import Foundation
 
-enum CharacterStatus {
-    
-    case alive
-    case dead
-    case unknown
+enum CharacterStatus: String, Codable {
+    case alive = "Alive"
+    case dead = "Dead"
+    case unknown = "unknown"
 }

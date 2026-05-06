@@ -2,7 +2,7 @@
 //  CharacterListViewModelTests.swift
 //  RickAndMortyAppTests
 //
-//  Created by Adrian Flores Herrera on 4/29/26.
+//  Created by Adrian Flores Herrera on 5/6/26.
 //
 
 import XCTest

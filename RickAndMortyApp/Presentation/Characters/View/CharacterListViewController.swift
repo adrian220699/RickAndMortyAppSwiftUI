@@ -2,30 +2,28 @@
 //  CharacterListViewController.swift
 //  RickAndMortyApp
 //
-//  Created by Adrian Flores Herrera on 4/27/26.
+//  Created by Adrian Flores Herrera on 5/5/26.
 //
-import Foundation
 import UIKit
+import SwiftUI
+
 final class CharacterListViewController: UIViewController,
                                          UITableViewDelegate,
                                          UISearchBarDelegate,
                                          UITableViewDataSource {
 
+    // MARK: - Dependencies
     private let viewModel: CharacterListViewModel
-    private var characters: [Character] = []
+    private let episodeService: EpisodeServiceProtocol
+    private let favoritesRepository: FavoritesRepositoryProtocol
 
-    // MARK: - UI
+    private var characters: [Character] = []
+    private var searchTask: Task<Void, Never>?
+    private var isLoadingMore = false
+
+    // MARK: - UI UIKit
     private let searchController = UISearchController(searchResultsController: nil)
     private let tableView = UITableView()
-    private let loadingIndicator = UIActivityIndicatorView(style: .large)
-
-    private let emptyLabel: UILabel = {
-        let label = UILabel()
-        label.text = "No characters found"
-        label.textAlignment = .center
-        label.isHidden = true
-        return label
-    }()
 
     private let statusSegmented: UISegmentedControl = {
         let sc = UISegmentedControl(items: ["All", "Alive", "Dead", "Unknown"])
@@ -35,10 +33,9 @@ final class CharacterListViewController: UIViewController,
 
     private let refreshControl = UIRefreshControl()
 
-    private let episodeService: EpisodeServiceProtocol
-    private let favoritesRepository: FavoritesRepositoryProtocol
-
-    private var searchTask: Task<Void, Never>?
+    // MARK: - SwiftUI Views
+    private lazy var emptyStateView = UIHostingController(rootView: EmptyStateView())
+    private lazy var loadingView = UIHostingController(rootView: LoadingView())
 
     // MARK: - INIT
     init(viewModel: CharacterListViewModel,
@@ -56,6 +53,7 @@ final class CharacterListViewController: UIViewController,
         fatalError()
     }
 
+    // MARK: - LIFE CYCLE
     override func viewDidLoad() {
         super.viewDidLoad()
 
@@ -63,6 +61,7 @@ final class CharacterListViewController: UIViewController,
 
         setupUI()
         setupNavigationBar()
+        setupSwiftUIViews()
         bindViewModel()
 
         Task {
@@ -88,7 +87,7 @@ final class CharacterListViewController: UIViewController,
         navigationController?.pushViewController(vc, animated: true)
     }
 
-    // MARK: - UI
+    // MARK: - UI SETUP
     private func setupUI() {
 
         title = "Characters"
@@ -98,20 +97,24 @@ final class CharacterListViewController: UIViewController,
         tableView.register(CharacterCell.self,
                            forCellReuseIdentifier: CharacterCell.identifier)
 
-        tableView.translatesAutoresizingMaskIntoConstraints = false
-        statusSegmented.translatesAutoresizingMaskIntoConstraints = false
-        loadingIndicator.translatesAutoresizingMaskIntoConstraints = false
-        emptyLabel.translatesAutoresizingMaskIntoConstraints = false
+        tableView.rowHeight = 100
+        tableView.separatorStyle = .none
+        tableView.backgroundColor = .systemGroupedBackground
+        tableView.keyboardDismissMode = .onDrag
 
         tableView.refreshControl = refreshControl
-        refreshControl.addTarget(self, action: #selector(refreshData), for: .valueChanged)
+        refreshControl.addTarget(self,
+                                 action: #selector(refreshData),
+                                 for: .valueChanged)
+
+        tableView.translatesAutoresizingMaskIntoConstraints = false
+        statusSegmented.translatesAutoresizingMaskIntoConstraints = false
 
         view.addSubview(statusSegmented)
         view.addSubview(tableView)
-        view.addSubview(loadingIndicator)
-        view.addSubview(emptyLabel)
 
         NSLayoutConstraint.activate([
+
             statusSegmented.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 8),
             statusSegmented.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
             statusSegmented.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
@@ -119,54 +122,118 @@ final class CharacterListViewController: UIViewController,
             tableView.topAnchor.constraint(equalTo: statusSegmented.bottomAnchor, constant: 8),
             tableView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             tableView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            tableView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
-
-            loadingIndicator.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            loadingIndicator.centerYAnchor.constraint(equalTo: view.centerYAnchor),
-
-            emptyLabel.centerXAnchor.constraint(equalTo: view.centerXAnchor),
-            emptyLabel.centerYAnchor.constraint(equalTo: view.centerYAnchor)
+            tableView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
         ])
 
         statusSegmented.addTarget(self,
-                                  action: #selector(statusChanged),
-                                  for: .valueChanged)
+                                   action: #selector(statusChanged),
+                                   for: .valueChanged)
 
         navigationItem.searchController = searchController
         searchController.searchBar.delegate = self
         searchController.obscuresBackgroundDuringPresentation = false
     }
 
-    // MARK: - FETCH SAFE
-    private func fetch() {
-        Task {
-            await viewModel.fetchCharacters()
+    // MARK: - SWIFTUI SETUP
+    private func setupSwiftUIViews() {
+
+        addChild(emptyStateView)
+        addChild(loadingView)
+
+        view.addSubview(emptyStateView.view)
+        view.addSubview(loadingView.view)
+
+        emptyStateView.didMove(toParent: self)
+        loadingView.didMove(toParent: self)
+
+        emptyStateView.view.translatesAutoresizingMaskIntoConstraints = false
+        loadingView.view.translatesAutoresizingMaskIntoConstraints = false
+
+        NSLayoutConstraint.activate([
+
+            emptyStateView.view.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            emptyStateView.view.centerYAnchor.constraint(equalTo: view.centerYAnchor),
+
+            loadingView.view.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            loadingView.view.centerYAnchor.constraint(equalTo: view.centerYAnchor)
+        ])
+
+        updateUIState(.loading)
+    }
+
+    // MARK: - UI STATE
+    private enum UIState {
+        case loading
+        case content
+        case empty
+    }
+
+    private func updateUIState(_ state: UIState) {
+
+        switch state {
+
+        case .loading:
+            loadingView.view.isHidden = false
+            emptyStateView.view.isHidden = true
+            tableView.isHidden = true
+
+        case .content:
+            loadingView.view.isHidden = true
+            emptyStateView.view.isHidden = true
+            tableView.isHidden = false
+
+        case .empty:
+            loadingView.view.isHidden = true
+            emptyStateView.view.isHidden = false
+            tableView.isHidden = true
         }
     }
 
-    // MARK: - REFRESH
+    // MARK: - BIND VIEWMODEL
+    private func bindViewModel() {
+
+        viewModel.onStateChange = { [weak self] state in
+            guard let self else { return }
+
+            DispatchQueue.main.async {
+
+                switch state {
+
+                case .loading:
+                    self.updateUIState(.loading)
+
+                case .idle:
+                    self.updateUIState(.loading)
+
+                case .success(let characters):
+
+                    self.characters = characters
+                    self.tableView.reloadData()
+                    self.refreshControl.endRefreshing()
+
+                    self.updateUIState(characters.isEmpty ? .empty : .content)
+
+                case .empty:
+                    self.characters = []
+                    self.tableView.reloadData()
+                    self.refreshControl.endRefreshing()
+
+                    self.updateUIState(.empty)
+
+                case .error(let message):
+                    self.refreshControl.endRefreshing()
+                    self.showError(message)
+                }
+            }
+        }
+    }
+
+    // MARK: - ACTIONS
     @objc private func refreshData() {
         viewModel.refresh()
-        fetch()
+        Task { await viewModel.fetchCharacters() }
     }
 
-    // MARK: - SEARCH (DEBOUNCE FIXED)
-    func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
-
-        viewModel.updateFilters(name: searchText)
-
-        searchTask?.cancel()
-
-        searchTask = Task {
-            try? await Task.sleep(nanoseconds: 300_000_000)
-
-            guard !Task.isCancelled else { return }
-
-            await viewModel.fetchCharacters()
-        }
-    }
-
-    // MARK: - STATUS FILTER
     @objc private func statusChanged() {
 
         let index = statusSegmented.selectedSegmentIndex
@@ -181,64 +248,20 @@ final class CharacterListViewController: UIViewController,
         }
 
         viewModel.updateStatus(value)
-        fetch()
+        Task { await viewModel.fetchCharacters() }
     }
 
-    // MARK: - BIND
-    private func bindViewModel() {
+    func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
 
-        viewModel.onStateChange = { [weak self] state in
-            guard let self else { return }
+        viewModel.updateFilters(name: searchText)
 
-            DispatchQueue.main.async {
+        searchTask?.cancel()
 
-                switch state {
-
-                case .idle:
-                    self.loadingIndicator.stopAnimating()
-                    self.emptyLabel.isHidden = true
-
-                case .loading:
-                    self.loadingIndicator.startAnimating()
-                    self.emptyLabel.isHidden = true
-
-                case .success(let characters):
-                    self.loadingIndicator.stopAnimating()
-                    self.refreshControl.endRefreshing()
-
-                    self.characters = characters
-                    self.tableView.reloadData()
-
-                    self.emptyLabel.isHidden = true
-
-                case .empty:
-                    self.loadingIndicator.stopAnimating()
-                    self.refreshControl.endRefreshing()
-
-                    self.characters = []
-                    self.tableView.reloadData()
-
-                    self.emptyLabel.isHidden = false
-
-                case .error(let message):
-                    self.loadingIndicator.stopAnimating()
-                    self.refreshControl.endRefreshing()
-
-                    self.showError(message)
-                }
-            }
+        searchTask = Task {
+            try? await Task.sleep(nanoseconds: 300_000_000)
+            guard !Task.isCancelled else { return }
+            await viewModel.fetchCharacters()
         }
-    }
-
-    // MARK: - ERROR
-    private func showError(_ message: String) {
-        let alert = UIAlertController(
-            title: "Error",
-            message: message,
-            preferredStyle: .alert
-        )
-        alert.addAction(UIAlertAction(title: "OK", style: .default))
-        present(alert, animated: true)
     }
 
     // MARK: - TABLE
@@ -276,7 +299,7 @@ final class CharacterListViewController: UIViewController,
         navigationController?.pushViewController(vc, animated: true)
     }
 
-    // MARK: - PAGINATION FIX
+    // MARK: - PAGINATION
     func scrollViewDidScroll(_ scrollView: UIScrollView) {
 
         let position = scrollView.contentOffset.y
@@ -284,9 +307,29 @@ final class CharacterListViewController: UIViewController,
         let screenHeight = scrollView.frame.size.height
 
         guard contentHeight > 0 else { return }
+        guard !isLoadingMore else { return }
 
         if position > contentHeight - screenHeight - 150 {
-            fetch()
+
+            isLoadingMore = true
+
+            Task {
+                await viewModel.fetchCharacters()
+                isLoadingMore = false
+            }
         }
+    }
+
+    // MARK: - ERROR
+    private func showError(_ message: String) {
+
+        let alert = UIAlertController(
+            title: "Error",
+            message: message,
+            preferredStyle: .alert
+        )
+
+        alert.addAction(UIAlertAction(title: "OK", style: .default))
+        present(alert, animated: true)
     }
 }

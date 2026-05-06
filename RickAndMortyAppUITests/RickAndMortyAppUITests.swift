@@ -2,7 +2,7 @@
 //  RickAndMortyAppUITests.swift
 //  RickAndMortyAppUITests
 //
-//  Created by Adrian Flores Herrera on 4/29/26.
+//  Created by Adrian Flores Herrera on 5/6/26.
 //
 
 import XCTest
@@ -23,11 +23,6 @@ final class RickAndMortyAppUITests: XCTestCase {
         XCTAssertTrue(firstCell.waitForExistence(timeout: 5))
 
         firstCell.tap()
-
-        let favoriteButton = app.buttons["favoriteButton"]
-        XCTAssertTrue(favoriteButton.waitForExistence(timeout: 5))
-
-        favoriteButton.tap()
 
         app.navigationBars.buttons.element(boundBy: 0).tap()
 

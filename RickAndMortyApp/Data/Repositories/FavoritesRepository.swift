@@ -2,7 +2,7 @@
 //  FavoritesRepository.swift
 //  RickAndMortyApp
 //
-//  Created by Adrian Flores Herrera on 4/28/26.
+//  Created by Adrian Flores Herrera on 5/4/26.
 //
 
 import Foundation
@@ -13,7 +13,6 @@ final class FavoritesRepository: FavoritesRepositoryProtocol {
     private let storage = StorageManager.shared
 
     // MARK: - GET
-
     func getFavorites() -> [Character] {
 
         let request = NSFetchRequest<FavoriteCharacterEntity>(
@@ -27,22 +26,21 @@ final class FavoritesRepository: FavoritesRepositoryProtocol {
         return result.map { entity in
 
             let location: Location? = {
-                if entity.locationName != nil {
-                    return Location(
-                        name: entity.locationName ?? "",
-                        latitude: entity.latitude,
-                        longitude: entity.longitude
-                    )
-                }
-                return nil
+                guard let name = entity.locationName else { return nil }
+
+                return Location(
+                    name: name,
+                    latitude: entity.latitude,
+                    longitude: entity.longitude
+                )
             }()
 
             return Character(
                 id: Int(entity.id),
                 name: entity.name ?? "",
-                status: .unknown,
-                species: "",
-                gender: "",
+                status: CharacterStatus(rawValue: entity.status ?? "") ?? .unknown,
+                species: entity.species ?? "",
+                gender: entity.gender ?? "",
                 image: entity.image ?? "",
                 location: location,
                 episodeURLs: [],
@@ -52,7 +50,6 @@ final class FavoritesRepository: FavoritesRepositoryProtocol {
     }
 
     // MARK: - SAVE
-
     func saveFavorite(_ character: Character) {
 
         let entity = FavoriteCharacterEntity(context: storage.context)
@@ -60,6 +57,10 @@ final class FavoritesRepository: FavoritesRepositoryProtocol {
         entity.id = Int64(character.id)
         entity.name = character.name
         entity.image = character.image
+
+        entity.species = character.species
+        entity.gender = character.gender
+        entity.status = character.status.rawValue
 
         if let location = character.location {
             entity.latitude = location.latitude
@@ -71,7 +72,6 @@ final class FavoritesRepository: FavoritesRepositoryProtocol {
     }
 
     // MARK: - DELETE
-
     func deleteFavorite(id: Int) {
 
         let request = NSFetchRequest<FavoriteCharacterEntity>(
@@ -89,7 +89,6 @@ final class FavoritesRepository: FavoritesRepositoryProtocol {
     }
 
     // MARK: - CHECK
-
     func isFavorite(id: Int) -> Bool {
 
         let request = NSFetchRequest<FavoriteCharacterEntity>(

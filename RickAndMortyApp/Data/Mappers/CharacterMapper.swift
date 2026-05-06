@@ -2,7 +2,7 @@
 //  CharacterMapper.swift
 //  RickAndMortyApp
 //
-//  Created by Adrian Flores Herrera on 4/27/26.
+//  Created by Adrian Flores Herrera on 5/4/26.
 //
 
 final class CharacterMapper {

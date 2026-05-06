@@ -2,24 +2,20 @@
 //  CharacterDetailViewModel.swift
 //  RickAndMortyApp
 //
-//  Created by Adrian Flores Herrera on 4/27/26.
+//  Created by Adrian Flores Herrera on 5/5/26.
 //
 import Foundation
+import Combine
 
-final class CharacterDetailViewModel {
-
-    // MARK: - Dependencies
+final class CharacterDetailViewModel: ObservableObject {
 
     private let character: Character
     private let repository: FavoritesRepositoryProtocol
     private let episodeService: EpisodeServiceProtocol
     private let storage = StorageManager.shared
 
-    // MARK: - State
-
-    private(set) var episodes: [Episode] = []
-
-    // MARK: - Init
+    @Published var episodes: [Episode] = []
+    @Published private(set) var isFavoriteState: Bool = false
 
     init(
         character: Character,
@@ -29,14 +25,11 @@ final class CharacterDetailViewModel {
         self.character = character
         self.repository = repository
         self.episodeService = episodeService
+
+        self.isFavoriteState = repository.isFavorite(id: character.id)
     }
 
-    // MARK: - Exposed data
-
-    var characterData: Character {
-        character
-    }
-
+    var characterData: Character { character }
     var id: Int { character.id }
     var name: String { character.name }
     var species: String { character.species }
@@ -50,33 +43,26 @@ final class CharacterDetailViewModel {
     }
 
     var gender: String { character.gender }
-
-    var location: String {
-        character.location?.name ?? "Unknown"
-    }
-
+    var location: String { character.location?.name ?? "Unknown" }
     var imageURL: String { character.image }
+    var episodeURLs: [String] { character.episodeURLs }
 
-    var episodeURLs: [String] {
-        character.episodeURLs
-    }
-
-    // MARK: - Favorites
-
+    // MARK: FAVORITE (REACTIVO + PERSISTENTE)
     var isFavorite: Bool {
-        repository.isFavorite(id: character.id)
+        isFavoriteState
     }
 
     func toggleFavorite() {
         if repository.isFavorite(id: character.id) {
             repository.deleteFavorite(id: character.id)
+            isFavoriteState = false
         } else {
             repository.saveFavorite(character)
+            isFavoriteState = true
         }
     }
 
-    // MARK: - Episodes
-
+    // MARK: EPISODES
     func fetchEpisodes() async {
 
         var temp: [Episode] = []
@@ -86,12 +72,8 @@ final class CharacterDetailViewModel {
         await withTaskGroup(of: EpisodeDTO?.self) { group in
 
             for urlString in episodeURLs {
-
                 group.addTask {
-                    guard let url = URL(string: urlString) else {
-                        return nil
-                    }
-
+                    guard let url = URL(string: urlString) else { return nil }
                     return try? await self.episodeService.fetchEpisode(url: url)
                 }
             }
@@ -110,11 +92,12 @@ final class CharacterDetailViewModel {
             }
         }
 
-        episodes = temp.sorted { $0.id < $1.id }
+        await MainActor.run {
+            self.episodes = temp.sorted { $0.id < $1.id }
+        }
     }
 
-    // MARK: - Watched episodes (PERSISTENTE)
-
+    // MARK: TOGGLE EPISODE (CORE DATA REAL)
     func toggleWatched(at index: Int) {
         guard episodes.indices.contains(index) else { return }
 

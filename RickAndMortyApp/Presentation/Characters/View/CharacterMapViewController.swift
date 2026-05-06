@@ -2,76 +2,35 @@
 //  CharacterMapViewController.swift
 //  RickAndMortyApp
 //
-//  Created by Adrian Flores Herrera on 4/27/26.
+//  Created by Adrian Flores Herrera on 5/5/26.
 //
 
 
 import UIKit
 import MapKit
+import SwiftUI
 
 final class CharacterMapViewController: UIViewController {
 
     private let characters: [Character]
-    private let mapView = MKMapView()
 
     init(characters: [Character]) {
         self.characters = characters
         super.init(nibName: nil, bundle: nil)
     }
 
-    required init?(coder: NSCoder) {
-        fatalError()
-    }
+    required init?(coder: NSCoder) { fatalError() }
 
     override func viewDidLoad() {
         super.viewDidLoad()
 
-        title = "Map"
-        view.backgroundColor = .systemBackground
+        let swiftUIView = CharacterMapSwiftUIView(characters: characters)
+        let host = UIHostingController(rootView: swiftUIView)
 
-        setupMap()
-        addPins()
-    }
+        addChild(host)
+        view.addSubview(host.view)
+        host.didMove(toParent: self)
 
-    private func setupMap() {
-        view.addSubview(mapView)
-        mapView.frame = view.bounds
-    }
-
-    private func addPins() {
-
-        guard !characters.isEmpty else { return }
-
-        for character in characters {
-
-            guard let location = character.location else { continue }
-
-            let coordinate = CLLocationCoordinate2D(
-                latitude: location.latitude,
-                longitude: location.longitude
-            )
-
-            let annotation = MKPointAnnotation()
-            annotation.title = character.name
-            annotation.subtitle = location.name
-            annotation.coordinate = coordinate
-
-            mapView.addAnnotation(annotation)
-        }
-
-        // centrar en el primero válido
-        if let first = characters.first,
-           let location = first.location {
-
-            let region = MKCoordinateRegion(
-                center: CLLocationCoordinate2D(
-                    latitude: location.latitude,
-                    longitude: location.longitude
-                ),
-                span: MKCoordinateSpan(latitudeDelta: 20, longitudeDelta: 20)
-            )
-
-            mapView.setRegion(region, animated: true)
-        }
+        host.view.frame = view.bounds
     }
 }

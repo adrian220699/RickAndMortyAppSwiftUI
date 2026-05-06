@@ -2,20 +2,22 @@
 //  FavoritesViewController.swift
 //  RickAndMortyApp
 //
-//  Created by Adrian Flores Herrera on 4/27/26.
+//  Created by Adrian Flores Herrera on 5/5/26.
 //
 
 import UIKit
+import SwiftUI
 
 final class FavoritesViewController: UIViewController {
 
-    private let tableView = UITableView()
     private var characters: [Character] = []
 
     private let repository: FavoritesRepositoryProtocol
     private let episodeService: EpisodeServiceProtocol
 
     private var isAuthenticated = false
+
+    private var hostingController: UIHostingController<AnyView>?
 
     // MARK: - INIT
 
@@ -28,7 +30,7 @@ final class FavoritesViewController: UIViewController {
     }
 
     required init?(coder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
+        fatalError()
     }
 
     override func viewDidLoad() {
@@ -52,7 +54,6 @@ final class FavoritesViewController: UIViewController {
 
                 if success {
                     self.isAuthenticated = true
-                    self.setupTable()
                     self.loadFavorites()
                 } else {
                     self.showAccessDenied()
@@ -61,76 +62,56 @@ final class FavoritesViewController: UIViewController {
         }
     }
 
-    // MARK: - TABLE SETUP
-
-    private func setupTable() {
-
-        view.addSubview(tableView)
-
-        tableView.translatesAutoresizingMaskIntoConstraints = false
-
-        NSLayoutConstraint.activate([
-            tableView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
-            tableView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
-            tableView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            tableView.trailingAnchor.constraint(equalTo: view.trailingAnchor)
-        ])
-
-        tableView.dataSource = self
-        tableView.delegate = self
-
-        tableView.register(UITableViewCell.self, forCellReuseIdentifier: "cell")
-    }
-
     // MARK: - LOAD FAVORITES
 
     private func loadFavorites() {
+
         characters = repository.getFavorites()
-        print("Favorites loaded:", characters.count)
-        tableView.reloadData()
+
+        let swiftUIView = FavoritesListView(
+            characters: characters,
+            onSelect: { [weak self] character in
+                self?.openDetail(character)
+            }
+        )
+
+        showSwiftUI(swiftUIView)
+    }
+
+    // MARK: - SWIFTUI HOST
+
+    private func showSwiftUI<V: View>(_ swiftUIView: V) {
+
+        hostingController?.view.removeFromSuperview()
+        hostingController?.removeFromParent()
+
+        let host = UIHostingController(rootView: AnyView(swiftUIView))
+        hostingController = host
+
+        addChild(host)
+        self.view.addSubview(host.view)
+        host.didMove(toParent: self)
+
+        host.view.translatesAutoresizingMaskIntoConstraints = false
+
+        NSLayoutConstraint.activate([
+            host.view.topAnchor.constraint(equalTo: self.view.safeAreaLayoutGuide.topAnchor),
+            host.view.bottomAnchor.constraint(equalTo: self.view.bottomAnchor),
+            host.view.leadingAnchor.constraint(equalTo: self.view.leadingAnchor),
+            host.view.trailingAnchor.constraint(equalTo: self.view.trailingAnchor)
+        ])
     }
 
     // MARK: - ACCESS DENIED
 
     private func showAccessDenied() {
 
-        let label = UILabel()
-        label.text = "Acceso denegado"
-        label.textAlignment = .center
-        label.font = .systemFont(ofSize: 20, weight: .medium)
-        label.frame = view.bounds
-
-        view.addSubview(label)
-    }
-}
-
-// MARK: - TABLE
-
-extension FavoritesViewController: UITableViewDataSource, UITableViewDelegate {
-
-    func tableView(_ tableView: UITableView,
-                   numberOfRowsInSection section: Int) -> Int {
-        characters.count
+        showSwiftUI(AccessDeniedView())
     }
 
-    func tableView(_ tableView: UITableView,
-                   cellForRowAt indexPath: IndexPath) -> UITableViewCell {
+    // MARK: - NAVIGATION
 
-        let cell = tableView.dequeueReusableCell(withIdentifier: "cell", for: indexPath)
-
-        let character = characters[indexPath.row]
-
-        cell.textLabel?.text = character.name
-        cell.detailTextLabel?.text = character.species
-        cell.accessoryType = .disclosureIndicator
-
-        return cell
-    }
-
-    func tableView(_ tableView: UITableView,
-                   didSelectRowAt indexPath: IndexPath) {
-
-        let character = characters[indexPath.row]
+    private func openDetail(_ character: Character) {
 
         let vm = CharacterDetailViewModel(
             character: character,
