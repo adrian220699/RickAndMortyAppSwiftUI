@@ -72,7 +72,7 @@ Se almacena localmente:
 ### 1. Clonar repositorio
 
 ```bash
-git clone https://github.com/adrian220699/RickAndMortyApp.git
+git clone https://github.com/adrian220699/RickAndMortyAppSwiftUI
 ```
 
 ### 2. Abrir proyecto
