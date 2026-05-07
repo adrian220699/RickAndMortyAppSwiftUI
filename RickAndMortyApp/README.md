@@ -107,11 +107,12 @@ xcodebuild test -scheme RickAndMortyApp
 ## Estructura del proyecto
 
 ```text
+App/
+Assets/
 Core/
 Data/
 Domain/
 Presentation/
-Protocols/
 ```
 
 ---
