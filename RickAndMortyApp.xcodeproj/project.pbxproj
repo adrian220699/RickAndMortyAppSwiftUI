@@ -6,10 +6,6 @@
 	objectVersion = 77;
 	objects = {
 
-/* Begin PBXBuildFile section */
-		3A294C4D2FA1252E00B6E4A9 /* RickAndMortyModel.xcdatamodeld in Sources */ = {isa = PBXBuildFile; fileRef = 3A294C4B2FA1252E00B6E4A9 /* RickAndMortyModel.xcdatamodeld */; };
-/* End PBXBuildFile section */
-
 /* Begin PBXContainerItemProxy section */
 		3AA003E32FA24DE700D1E8DF /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -59,7 +55,7 @@
 		3AA6BA562F9FD1CA0054C110 /* Exceptions for "RickAndMortyApp" folder in "RickAndMortyApp" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
-				Info.plist,
+				App/Info.plist,
 				README.md,
 			);
 			target = 3AA6BA432F9FD1C90054C110 /* RickAndMortyApp */;
@@ -297,7 +293,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				3A294C4D2FA1252E00B6E4A9 /* RickAndMortyModel.xcdatamodeld in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -411,7 +406,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 5S53RADT22;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = RickAndMortyApp/Info.plist;
+				INFOPLIST_FILE = RickAndMortyApp/App/Info.plist;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UIMainStoryboardFile = Main;
@@ -448,7 +443,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 5S53RADT22;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = RickAndMortyApp/Info.plist;
+				INFOPLIST_FILE = RickAndMortyApp/App/Info.plist;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UIMainStoryboardFile = Main;
@@ -646,7 +641,7 @@
 			);
 			currentVersion = 3A294C4C2FA1252E00B6E4A9 /* RickAndMortyModel.xcdatamodel */;
 			name = RickAndMortyModel.xcdatamodeld;
-			path = RickAndMortyApp/Data/CoreData/RickAndMortyModel.xcdatamodeld;
+			path = RickAndMortyApp/Data/Persistence;
 			sourceTree = "<group>";
 			versionGroupType = wrapper.xcdatamodel;
 		};
