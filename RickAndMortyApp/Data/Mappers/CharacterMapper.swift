@@ -27,6 +27,7 @@ final class CharacterMapper {
             species: dto.species,
             gender: dto.gender,
             image: dto.image,
+            imageData: nil,   
             location: Location(
                 name: dto.location.name,
                 latitude: Double.random(in: -90...90),

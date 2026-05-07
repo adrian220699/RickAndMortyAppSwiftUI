@@ -4,7 +4,6 @@
 //
 //  Created by Adrian Flores Herrera on 5/5/26.
 //
-
 import UIKit
 import SwiftUI
 
@@ -42,6 +41,16 @@ final class FavoritesViewController: UIViewController {
         authenticateUser()
     }
 
+    // MARK: - REFRESH AL REGRESAR
+
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+
+        guard isAuthenticated else { return }
+
+        refreshFavorites()
+    }
+
     // MARK: - BIOMETRÍA
 
     private func authenticateUser() {
@@ -65,6 +74,12 @@ final class FavoritesViewController: UIViewController {
     // MARK: - LOAD FAVORITES
 
     private func loadFavorites() {
+        refreshFavorites()
+    }
+
+    // MARK: - REFRESH FAVORITES
+
+    private func refreshFavorites() {
 
         characters = repository.getFavorites()
 

@@ -13,7 +13,8 @@ struct Character {
     let species: String
     let gender: String
     let image: String
-    let location: Location?   
+    let imageData: Data?
+    let location: Location?
     let episodeURLs: [String]
     var isFavorite: Bool
 }

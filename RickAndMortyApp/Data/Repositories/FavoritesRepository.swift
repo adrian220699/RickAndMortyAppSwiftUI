@@ -26,7 +26,10 @@ final class FavoritesRepository: FavoritesRepositoryProtocol {
         return result.map { entity in
 
             let location: Location? = {
-                guard let name = entity.locationName else { return nil }
+
+                guard let name = entity.locationName else {
+                    return nil
+                }
 
                 return Location(
                     name: name,
@@ -38,10 +41,13 @@ final class FavoritesRepository: FavoritesRepositoryProtocol {
             return Character(
                 id: Int(entity.id),
                 name: entity.name ?? "",
-                status: CharacterStatus(rawValue: entity.status ?? "") ?? .unknown,
+                status: CharacterStatus(
+                    rawValue: entity.status ?? ""
+                ) ?? .unknown,
                 species: entity.species ?? "",
                 gender: entity.gender ?? "",
                 image: entity.image ?? "",
+                imageData: entity.imageData,
                 location: location,
                 episodeURLs: [],
                 isFavorite: true
@@ -52,7 +58,9 @@ final class FavoritesRepository: FavoritesRepositoryProtocol {
     // MARK: - SAVE
     func saveFavorite(_ character: Character) {
 
-        let entity = FavoriteCharacterEntity(context: storage.context)
+        let entity = FavoriteCharacterEntity(
+            context: storage.context
+        )
 
         entity.id = Int64(character.id)
         entity.name = character.name
@@ -62,7 +70,16 @@ final class FavoritesRepository: FavoritesRepositoryProtocol {
         entity.gender = character.gender
         entity.status = character.status.rawValue
 
+        // MARK: - SAVE IMAGE DATA
+        if let url = URL(string: character.image),
+           let data = try? Data(contentsOf: url) {
+
+            entity.imageData = data
+        }
+
+        // MARK: - LOCATION
         if let location = character.location {
+
             entity.latitude = location.latitude
             entity.longitude = location.longitude
             entity.locationName = location.name
@@ -78,7 +95,10 @@ final class FavoritesRepository: FavoritesRepositoryProtocol {
             entityName: "FavoriteCharacterEntity"
         )
 
-        request.predicate = NSPredicate(format: "id == %d", Int64(id))
+        request.predicate = NSPredicate(
+            format: "id == %d",
+            Int64(id)
+        )
 
         if let result = try? storage.context.fetch(request),
            let object = result.first {
@@ -95,7 +115,10 @@ final class FavoritesRepository: FavoritesRepositoryProtocol {
             entityName: "FavoriteCharacterEntity"
         )
 
-        request.predicate = NSPredicate(format: "id == %d", Int64(id))
+        request.predicate = NSPredicate(
+            format: "id == %d",
+            Int64(id)
+        )
 
         let result = (try? storage.context.fetch(request)) ?? []
 

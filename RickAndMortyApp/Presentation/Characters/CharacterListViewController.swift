@@ -64,13 +64,82 @@ final class CharacterListViewController: UIViewController,
         setupSwiftUIViews()
         bindViewModel()
 
-        Task {
-            await viewModel.fetchCharacters()
+        checkConnectionAndLoad()
+    }
+
+    // MARK: - INTERNET VALIDATION
+    private func checkConnectionAndLoad() {
+
+        if NetworkMonitor.shared.isConnected {
+
+            Task {
+                await viewModel.fetchCharacters()
+            }
+
+        } else {
+
+            showOfflineAlert()
         }
+    }
+
+    // MARK: - OFFLINE ALERT
+    private func showOfflineAlert() {
+
+        let favorites = favoritesRepository.getFavorites()
+
+        let message: String
+
+        if favorites.isEmpty {
+
+            message = """
+            No tienes conexión a internet y aún no tienes favoritos guardados.
+
+            Agrega personajes a favoritos cuando tengas internet para poder visualizarlos sin conexión.
+            """
+
+        } else {
+
+            message = """
+            No tienes conexión a internet.
+
+            Puedes visualizar tus personajes favoritos guardados.
+            """
+        }
+
+        let alert = UIAlertController(
+            title: "Sin conexión",
+            message: message,
+            preferredStyle: .alert
+        )
+
+        // Reintentar
+        alert.addAction(UIAlertAction(title: "Reintentar", style: .default) { [weak self] _ in
+
+            self?.checkConnectionAndLoad()
+        })
+
+        // Abrir favoritos offline
+        if !favorites.isEmpty {
+
+            alert.addAction(UIAlertAction(title: "Ver favoritos", style: .default) { [weak self] _ in
+
+                guard let self else { return }
+
+                let vc = FavoritesViewController(
+                    repository: self.favoritesRepository,
+                    episodeService: self.episodeService
+                )
+
+                self.navigationController?.pushViewController(vc, animated: true)
+            })
+        }
+
+        present(alert, animated: true)
     }
 
     // MARK: - NAVIGATION
     private func setupNavigationBar() {
+
         navigationItem.rightBarButtonItem = UIBarButtonItem(
             title: "Favorites",
             style: .plain,
@@ -80,10 +149,12 @@ final class CharacterListViewController: UIViewController,
     }
 
     @objc private func openFavorites() {
+
         let vc = FavoritesViewController(
             repository: favoritesRepository,
             episodeService: episodeService
         )
+
         navigationController?.pushViewController(vc, animated: true)
     }
 
@@ -94,8 +165,11 @@ final class CharacterListViewController: UIViewController,
 
         tableView.dataSource = self
         tableView.delegate = self
-        tableView.register(CharacterCell.self,
-                           forCellReuseIdentifier: CharacterCell.identifier)
+
+        tableView.register(
+            CharacterCell.self,
+            forCellReuseIdentifier: CharacterCell.identifier
+        )
 
         tableView.rowHeight = 100
         tableView.separatorStyle = .none
@@ -103,9 +177,12 @@ final class CharacterListViewController: UIViewController,
         tableView.keyboardDismissMode = .onDrag
 
         tableView.refreshControl = refreshControl
-        refreshControl.addTarget(self,
-                                 action: #selector(refreshData),
-                                 for: .valueChanged)
+
+        refreshControl.addTarget(
+            self,
+            action: #selector(refreshData),
+            for: .valueChanged
+        )
 
         tableView.translatesAutoresizingMaskIntoConstraints = false
         statusSegmented.translatesAutoresizingMaskIntoConstraints = false
@@ -115,21 +192,41 @@ final class CharacterListViewController: UIViewController,
 
         NSLayoutConstraint.activate([
 
-            statusSegmented.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 8),
-            statusSegmented.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 16),
-            statusSegmented.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -16),
+            statusSegmented.topAnchor.constraint(
+                equalTo: view.safeAreaLayoutGuide.topAnchor,
+                constant: 8
+            ),
 
-            tableView.topAnchor.constraint(equalTo: statusSegmented.bottomAnchor, constant: 8),
+            statusSegmented.leadingAnchor.constraint(
+                equalTo: view.leadingAnchor,
+                constant: 16
+            ),
+
+            statusSegmented.trailingAnchor.constraint(
+                equalTo: view.trailingAnchor,
+                constant: -16
+            ),
+
+            tableView.topAnchor.constraint(
+                equalTo: statusSegmented.bottomAnchor,
+                constant: 8
+            ),
+
             tableView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+
             tableView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+
             tableView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
         ])
 
-        statusSegmented.addTarget(self,
-                                   action: #selector(statusChanged),
-                                   for: .valueChanged)
+        statusSegmented.addTarget(
+            self,
+            action: #selector(statusChanged),
+            for: .valueChanged
+        )
 
         navigationItem.searchController = searchController
+
         searchController.searchBar.delegate = self
         searchController.obscuresBackgroundDuringPresentation = false
     }
@@ -152,9 +249,11 @@ final class CharacterListViewController: UIViewController,
         NSLayoutConstraint.activate([
 
             emptyStateView.view.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+
             emptyStateView.view.centerYAnchor.constraint(equalTo: view.centerYAnchor),
 
             loadingView.view.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+
             loadingView.view.centerYAnchor.constraint(equalTo: view.centerYAnchor)
         ])
 
@@ -173,16 +272,19 @@ final class CharacterListViewController: UIViewController,
         switch state {
 
         case .loading:
+
             loadingView.view.isHidden = false
             emptyStateView.view.isHidden = true
             tableView.isHidden = true
 
         case .content:
+
             loadingView.view.isHidden = true
             emptyStateView.view.isHidden = true
             tableView.isHidden = false
 
         case .empty:
+
             loadingView.view.isHidden = true
             emptyStateView.view.isHidden = false
             tableView.isHidden = true
@@ -193,6 +295,7 @@ final class CharacterListViewController: UIViewController,
     private func bindViewModel() {
 
         viewModel.onStateChange = { [weak self] state in
+
             guard let self else { return }
 
             DispatchQueue.main.async {
@@ -200,29 +303,40 @@ final class CharacterListViewController: UIViewController,
                 switch state {
 
                 case .loading:
+
                     self.updateUIState(.loading)
 
                 case .idle:
+
                     self.updateUIState(.loading)
 
                 case .success(let characters):
 
                     self.characters = characters
+
                     self.tableView.reloadData()
+
                     self.refreshControl.endRefreshing()
 
-                    self.updateUIState(characters.isEmpty ? .empty : .content)
+                    self.updateUIState(
+                        characters.isEmpty ? .empty : .content
+                    )
 
                 case .empty:
+
                     self.characters = []
+
                     self.tableView.reloadData()
+
                     self.refreshControl.endRefreshing()
 
                     self.updateUIState(.empty)
 
-                case .error(let message):
+                case .error:
+
                     self.refreshControl.endRefreshing()
-                    self.showError(message)
+
+                    self.showOfflineAlert()
                 }
             }
         }
@@ -230,8 +344,8 @@ final class CharacterListViewController: UIViewController,
 
     // MARK: - ACTIONS
     @objc private func refreshData() {
-        viewModel.refresh()
-        Task { await viewModel.fetchCharacters() }
+
+        checkConnectionAndLoad()
     }
 
     @objc private func statusChanged() {
@@ -241,25 +355,38 @@ final class CharacterListViewController: UIViewController,
         let value: String?
 
         switch index {
-        case 1: value = "alive"
-        case 2: value = "dead"
-        case 3: value = "unknown"
-        default: value = nil
+
+        case 1:
+            value = "alive"
+
+        case 2:
+            value = "dead"
+
+        case 3:
+            value = "unknown"
+
+        default:
+            value = nil
         }
 
         viewModel.updateStatus(value)
-        Task { await viewModel.fetchCharacters() }
+
+        checkConnectionAndLoad()
     }
 
-    func searchBar(_ searchBar: UISearchBar, textDidChange searchText: String) {
+    func searchBar(_ searchBar: UISearchBar,
+                   textDidChange searchText: String) {
 
         viewModel.updateFilters(name: searchText)
 
         searchTask?.cancel()
 
         searchTask = Task {
+
             try? await Task.sleep(nanoseconds: 300_000_000)
+
             guard !Task.isCancelled else { return }
+
             await viewModel.fetchCharacters()
         }
     }
@@ -267,6 +394,7 @@ final class CharacterListViewController: UIViewController,
     // MARK: - TABLE
     func tableView(_ tableView: UITableView,
                    numberOfRowsInSection section: Int) -> Int {
+
         characters.count
     }
 
@@ -277,10 +405,12 @@ final class CharacterListViewController: UIViewController,
             withIdentifier: CharacterCell.identifier,
             for: indexPath
         ) as? CharacterCell else {
+
             return UITableViewCell()
         }
 
         cell.configure(with: characters[indexPath.row])
+
         return cell
     }
 
@@ -296,6 +426,7 @@ final class CharacterListViewController: UIViewController,
         )
 
         let vc = CharacterDetailViewController(viewModel: vm)
+
         navigationController?.pushViewController(vc, animated: true)
     }
 
@@ -314,7 +445,9 @@ final class CharacterListViewController: UIViewController,
             isLoadingMore = true
 
             Task {
+
                 await viewModel.fetchCharacters()
+
                 isLoadingMore = false
             }
         }
@@ -329,7 +462,10 @@ final class CharacterListViewController: UIViewController,
             preferredStyle: .alert
         )
 
-        alert.addAction(UIAlertAction(title: "OK", style: .default))
+        alert.addAction(
+            UIAlertAction(title: "OK", style: .default)
+        )
+
         present(alert, animated: true)
     }
 }
