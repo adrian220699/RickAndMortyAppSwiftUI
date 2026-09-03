@@ -1,6 +1,6 @@
 # Rick and Morty App
 
-App nativa iOS que permite explorar personajes de la serie *Rick and Morty*, ver detalles, gestionar favoritos, marcar episodios vistos y visualizar ubicaciones en un mapa.
+App nativa iOS Swift UI que permite explorar personajes de la serie *Rick and Morty*, ver detalles, gestionar favoritos, marcar episodios vistos y visualizar ubicaciones en un mapa.
 
 ## Features
 
