@@ -2,6 +2,16 @@
 
 App nativa iOS que permite explorar personajes de la serie *Rick and Morty*, ver detalles, gestionar favoritos, marcar episodios vistos y visualizar ubicaciones en un mapa.
 
+## Screenshots
+
+<p align="center">
+  <img src="https://github.com/adrian220699/RickAndMortyAppSwiftUI/blob/main/RickAndMortyApp/Screenshots/characters.png" width="200">
+  <img src="https://github.com/adrian220699/RickAndMortyAppSwiftUI/blob/main/RickAndMortyApp/Screenshots/detail.png" width="200">
+  <img src="https://github.com/adrian220699/RickAndMortyAppSwiftUI/blob/main/RickAndMortyApp/Screenshots/favorites.png" width="200">
+  <img src="https://github.com/adrian220699/RickAndMortyAppSwiftUI/blob/main/RickAndMortyApp/Screenshots/map.png" width="200">
+</p>
+
+
 ## Features
 
 ### Personajes
